@@ -47,11 +47,11 @@ jobs:
       - name: Update ECS resource image override
         run: |
           # Install raptor2
-          curl -sL https://github.com/Facets-cloud/raptor2-releases/releases/download/raptor2-v0.1.0/raptor2-linux-amd64 -o raptor2
-          chmod +x raptor2
+          curl -sL https://github.com/Facets-cloud/raptor2-releases/releases/download/raptor2-v0.1.0/raptor2-linux-amd64 -o /usr/local/bin/raptor2
+          chmod +x /usr/local/bin/raptor2
 
           # Update the image in the dev environment override
-          ./raptor2 apply override ecs_fargate_service/backend -p todo -e dev \
+          raptor2 apply override ecs_fargate_service/backend -p todo -e dev \
             --set "spec.container_image=$ECR_REPO:${{ steps.build.outputs.image_tag }}"
 
       - name: Deploy to ECS

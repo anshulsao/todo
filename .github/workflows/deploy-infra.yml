@@ -32,12 +32,12 @@ jobs:
 
       - name: Install raptor2
         run: |
-          curl -sL https://github.com/Facets-cloud/raptor2-releases/releases/download/raptor2-v0.1.0/raptor2-linux-amd64 -o raptor2
-          chmod +x raptor2
+          curl -sL https://github.com/Facets-cloud/raptor2-releases/releases/download/raptor2-v0.1.0/raptor2-linux-amd64 -o /usr/local/bin/raptor2
+          chmod +x /usr/local/bin/raptor2
 
       - name: Plan infrastructure
         run: |
-          ./raptor2 apply environment -p todo -e dev --plan
+          raptor2 apply environment -p todo -e dev --plan --allow-branch main
 
   apply:
     needs: plan
@@ -63,9 +63,9 @@ jobs:
 
       - name: Install raptor2
         run: |
-          curl -sL https://github.com/Facets-cloud/raptor2-releases/releases/download/raptor2-v0.1.0/raptor2-linux-amd64 -o raptor2
-          chmod +x raptor2
+          curl -sL https://github.com/Facets-cloud/raptor2-releases/releases/download/raptor2-v0.1.0/raptor2-linux-amd64 -o /usr/local/bin/raptor2
+          chmod +x /usr/local/bin/raptor2
 
       - name: Apply infrastructure
         run: |
-          ./raptor2 apply environment -p todo -e dev --auto-approve
+          raptor2 apply environment -p todo -e dev --auto-approve --allow-branch main
