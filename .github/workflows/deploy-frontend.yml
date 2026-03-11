@@ -42,27 +42,38 @@ jobs:
       - name: Get S3 bucket and CloudFront distribution
         id: infra
         run: |
-          # Read the terraform state to find bucket name and distribution ID
-          # These are output by the static_site module
-          BUCKET=$(aws s3api list-buckets --query "Buckets[?contains(Name,'todo') && contains(Name,'frontend')].Name" --output text | head -1)
-          DIST_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?contains(Comment,'todo') || contains(Origins.Items[0].DomainName,'todo')].Id" --output text | head -1)
+          # Find the S3 bucket by its Facets tags
+          BUCKET=$(aws resourcegroupstaggingapi get-resources \
+            --tag-filters Key=project,Values=todo Key=resource_type,Values=static_site \
+            --resource-type-filters s3 \
+            --query "ResourceTagMappingList[0].ResourceARN" --output text \
+            | sed 's|arn:aws:s3:::||')
+
+          # Find CloudFront distribution by its S3 origin
+          if [ -n "$BUCKET" ] && [ "$BUCKET" != "None" ]; then
+            DIST_ID=$(aws cloudfront list-distributions \
+              --query "DistributionList.Items[?Origins.Items[0].DomainName=='${BUCKET}.s3.amazonaws.com' || Origins.Items[0].DomainName=='${BUCKET}.s3.us-east-1.amazonaws.com'].Id" \
+              --output text | head -1)
+          fi
 
           echo "bucket=$BUCKET" >> "$GITHUB_OUTPUT"
           echo "distribution_id=$DIST_ID" >> "$GITHUB_OUTPUT"
+          echo "Found bucket: $BUCKET, distribution: $DIST_ID"
 
       - name: Deploy to S3
         working-directory: frontend
         run: |
-          if [ -n "${{ steps.infra.outputs.bucket }}" ]; then
-            aws s3 sync dist/ "s3://${{ steps.infra.outputs.bucket }}" --delete
-            echo "Deployed to S3 bucket: ${{ steps.infra.outputs.bucket }}"
+          BUCKET="${{ steps.infra.outputs.bucket }}"
+          if [ -n "$BUCKET" ] && [ "$BUCKET" != "None" ]; then
+            aws s3 sync dist/ "s3://$BUCKET" --delete
+            echo "Deployed to S3 bucket: $BUCKET"
           else
-            echo "S3 bucket not found. Run raptor2 apply first."
+            echo "S3 bucket not found. Run deploy-infra pipeline first."
             exit 1
           fi
 
       - name: Invalidate CloudFront cache
-        if: steps.infra.outputs.distribution_id != ''
+        if: steps.infra.outputs.distribution_id != '' && steps.infra.outputs.distribution_id != 'None'
         run: |
           aws cloudfront create-invalidation \
             --distribution-id "${{ steps.infra.outputs.distribution_id }}" \
