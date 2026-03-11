@@ -63,6 +63,19 @@ BACK UP the private key:
 
 If the key is lost, all encrypted secrets are PERMANENTLY unrecoverable.
 
+**Remote State Backend:**
+```bash
+# S3 with DynamoDB locking:
+raptor2 set backend -p PROJECT -e ENV --type s3 \
+  --bucket my-tf-state --region us-east-1 --lock-table tf-locks
+
+# GCS:
+raptor2 set backend -p PROJECT -e ENV --type gcs --bucket my-tf-state
+
+# Reset to local:
+raptor2 set backend -p PROJECT -e ENV --type local
+```
+
 **Secrets:**
 ```bash
 raptor2 set secret -p PROJECT -k KEY --value VALUE
@@ -452,6 +465,7 @@ PROJECT SETUP:
   raptor2 init [--name NAME]                     Scaffold project
   raptor2 init --refresh-skills                  Update skill files only
   raptor2 set module-source --name N --type T    Add/update module source
+  raptor2 set backend -p P -e E --type TYPE      Configure state backend
   raptor2 delete module-source NAME              Remove module source
   raptor2 create environment -p P -e E           Create environment
 

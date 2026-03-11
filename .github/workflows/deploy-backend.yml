@@ -10,18 +10,18 @@ on:
 env:
   AWS_REGION: us-east-1
   ECR_REPO: 313496281593.dkr.ecr.us-east-1.amazonaws.com/todo-backend
-  ECS_CLUSTER_SUFFIX: todo-dev    # matches raptor2 naming
-  ECS_SERVICE_SUFFIX: backend
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
-      contents: read
+      contents: write    # needed for git push
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -44,26 +44,17 @@ jobs:
           docker push $ECR_REPO:latest
           echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
 
-      - name: Update ECS resource image override
+      - name: Update image override and commit
         run: |
-          # Install raptor2
-          curl -sL https://github.com/Facets-cloud/raptor2-releases/releases/download/raptor2-v0.1.0/raptor2-linux-amd64 -o /usr/local/bin/raptor2
+          curl -sL https://github.com/Facets-cloud/raptor2-releases/releases/download/raptor2-v0.1.0/raptor2-linux-amd64 \
+            -o /usr/local/bin/raptor2
           chmod +x /usr/local/bin/raptor2
 
-          # Update the image in the dev environment override
           raptor2 apply override ecs_fargate_service/backend -p todo -e dev \
             --set "spec.container_image=$ECR_REPO:${{ steps.build.outputs.image_tag }}"
 
-      - name: Deploy to ECS
-        run: |
-          # Force new deployment with updated task definition
-          CLUSTER=$(aws ecs list-clusters --query "clusterArns[?contains(@,'todo')]" --output text | head -1)
-          SERVICE=$(aws ecs list-services --cluster "$CLUSTER" --query "serviceArns[?contains(@,'backend')]" --output text | head -1)
-
-          if [ -n "$CLUSTER" ] && [ -n "$SERVICE" ]; then
-            aws ecs update-service --cluster "$CLUSTER" --service "$SERVICE" \
-              --force-new-deployment --no-cli-pager
-            echo "ECS service updated — rolling deployment started"
-          else
-            echo "ECS cluster/service not found yet. Infrastructure may need initial deploy."
-          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add projects/
+          git commit -m "[skip ci] deploy: update backend image to ${{ steps.build.outputs.image_tag }}" || echo "No changes to commit"
+          git push
