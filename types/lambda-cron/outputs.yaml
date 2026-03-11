@@ -1,0 +1,16 @@
+name: '@org/lambda-cron'
+properties:
+    properties:
+        attributes:
+            properties:
+                function_arn:
+                    type: string
+                function_name:
+                    type: string
+                role_arn:
+                    type: string
+            type: object
+        interfaces:
+            type: object
+    type: object
+providers: []

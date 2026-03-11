@@ -1,0 +1,27 @@
+disabled: false
+flavor: aws
+inputs:
+    cloud_account:
+        output_name: default
+        resource_name: main
+        resource_type: cloud_account
+    network_details:
+        output_name: default
+        resource_name: main-vpc
+        resource_type: network
+kind: lambda_cron
+metadata:
+    name: todo-summary
+spec:
+    env:
+        DB_HOST: ${module.postgres_tododb.default.interfaces.writer.host}
+        DB_NAME: tododb
+        DB_PASSWORD: ${module.postgres_tododb.default.interfaces.writer.password}
+        DB_PORT: ${module.postgres_tododb.default.interfaces.writer.port}
+        DB_SSL: true
+        DB_USER: ${module.postgres_tododb.default.interfaces.writer.username}
+    handler: index.handler
+    memory_size: 128
+    runtime: nodejs20.x
+    timeout: 30
+version: "1.0"

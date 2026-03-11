@@ -1,0 +1,70 @@
+intent: lambda_cron
+flavor: aws
+version: "1.0"
+description: "Lambda function with EventBridge cron schedule and SES email sending"
+clouds:
+  - aws
+inputs:
+  cloud_account:
+    type: "@facets/aws_cloud_account"
+    displayName: Cloud Account
+    description: AWS credentials for deployment
+    optional: false
+    providers:
+      - aws
+  network_details:
+    type: "@facets/aws-vpc-details"
+    displayName: Network
+    description: VPC for Lambda to reach private resources like RDS
+    optional: false
+outputs:
+  default:
+    type: "@org/lambda-cron"
+    title: "Lambda Cron Function"
+spec:
+  type: object
+  properties:
+    runtime:
+      type: string
+      default: "nodejs20.x"
+      description: "Lambda runtime"
+    handler:
+      type: string
+      default: "index.handler"
+      description: "Lambda handler function"
+    memory_size:
+      type: integer
+      default: 128
+      description: "Memory in MB"
+    timeout:
+      type: integer
+      default: 30
+      description: "Timeout in seconds"
+    schedule_expression:
+      type: string
+      default: "cron(0 8 * * ? *)"
+      description: "EventBridge schedule expression"
+      x-ui-overrides-only: true
+    sender_email:
+      type: string
+      description: "SES verified sender email address"
+      x-ui-overrides-only: true
+    recipient_email:
+      type: string
+      description: "Email address to receive the summary"
+      x-ui-overrides-only: true
+    env:
+      type: object
+      description: "Additional environment variables"
+      default: {}
+  required: []
+sample:
+  kind: lambda_cron
+  flavor: aws
+  version: "1.0"
+  disabled: false
+  spec:
+    runtime: "nodejs20.x"
+    handler: "index.handler"
+    memory_size: 128
+    timeout: 30

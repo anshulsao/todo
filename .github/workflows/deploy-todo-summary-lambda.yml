@@ -1,0 +1,53 @@
+name: Deploy Todo Summary Lambda
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/lambdas/todo-summary/**'
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies and package
+        working-directory: backend/lambdas/todo-summary
+        run: |
+          npm ci
+          zip -r ../../../todo-summary-lambda.zip .
+
+      - name: Deploy to Lambda
+        run: |
+          FUNCTION_NAME="todo-summary-todo-dev"
+
+          if aws lambda get-function --function-name "$FUNCTION_NAME" 2>/dev/null; then
+            aws lambda update-function-code \
+              --function-name "$FUNCTION_NAME" \
+              --zip-file fileb://todo-summary-lambda.zip \
+              --no-cli-pager
+            echo "Lambda function code updated"
+          else
+            echo "Lambda function not found. Infrastructure may need initial deploy."
+          fi

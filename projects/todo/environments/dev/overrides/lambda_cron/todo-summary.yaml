@@ -1,0 +1,4 @@
+spec:
+    recipient_email: dev-team@example.com
+    schedule_expression: cron(0 8 * * ? *)
+    sender_email: todos-dev@example.com
