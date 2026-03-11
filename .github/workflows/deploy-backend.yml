@@ -47,7 +47,7 @@ jobs:
       - name: Update ECS resource image override
         run: |
           # Install raptor2
-          curl -sL https://github.com/Facets-cloud/facets-v3-modules/releases/latest/download/raptor2-linux-amd64 -o raptor2
+          curl -sL https://github.com/Facets-cloud/raptor2-releases/releases/download/raptor2-v0.1.0/raptor2-linux-amd64 -o raptor2
           chmod +x raptor2
 
           # Update the image in the dev environment override
