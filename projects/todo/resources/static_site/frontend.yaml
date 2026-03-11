@@ -1,0 +1,19 @@
+app:
+    build:
+        command: npm run build
+        output: dist
+    deploy:
+        strategy: commit
+    source: ./frontend
+disabled: false
+flavor: aws
+inputs:
+    cloud_account:
+        output_name: default
+        resource_name: main
+        resource_type: cloud_account
+kind: static_site
+metadata:
+    name: frontend
+spec: {}
+version: "1.0"

@@ -1,0 +1,69 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPO: 313496281593.dkr.ecr.us-east-1.amazonaws.com/todo-backend
+  ECS_CLUSTER_SUFFIX: todo-dev    # matches raptor2 naming
+  ECS_SERVICE_SUFFIX: backend
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag and push image
+        id: build
+        working-directory: backend
+        run: |
+          IMAGE_TAG="${{ github.sha }}"
+          docker build --platform linux/amd64 -t $ECR_REPO:$IMAGE_TAG -t $ECR_REPO:latest .
+          docker push $ECR_REPO:$IMAGE_TAG
+          docker push $ECR_REPO:latest
+          echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Update ECS resource image override
+        run: |
+          # Install raptor2
+          curl -sL https://github.com/Facets-cloud/facets-v3-modules/releases/latest/download/raptor2-linux-amd64 -o raptor2
+          chmod +x raptor2
+
+          # Update the image in the dev environment override
+          ./raptor2 apply override ecs_fargate_service/backend -p todo -e dev \
+            --set "spec.container_image=$ECR_REPO:${{ steps.build.outputs.image_tag }}"
+
+      - name: Deploy to ECS
+        run: |
+          # Force new deployment with updated task definition
+          CLUSTER=$(aws ecs list-clusters --query "clusterArns[?contains(@,'todo')]" --output text | head -1)
+          SERVICE=$(aws ecs list-services --cluster "$CLUSTER" --query "serviceArns[?contains(@,'backend')]" --output text | head -1)
+
+          if [ -n "$CLUSTER" ] && [ -n "$SERVICE" ]; then
+            aws ecs update-service --cluster "$CLUSTER" --service "$SERVICE" \
+              --force-new-deployment --no-cli-pager
+            echo "ECS service updated — rolling deployment started"
+          else
+            echo "ECS cluster/service not found yet. Infrastructure may need initial deploy."
+          fi

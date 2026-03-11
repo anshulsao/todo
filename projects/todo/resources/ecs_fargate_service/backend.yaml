@@ -1,0 +1,43 @@
+app:
+    build:
+        dockerfile: Dockerfile
+    deploy:
+        strategy: commit
+    image: 313496281593.dkr.ecr.us-east-1.amazonaws.com/todo-backend
+    source: ./backend
+disabled: false
+flavor: aws
+inputs:
+    alb:
+        output_name: default
+        resource_name: main-alb
+        resource_type: alb
+    cloud_account:
+        output_name: default
+        resource_name: main
+        resource_type: cloud_account
+    network_details:
+        output_name: default
+        resource_name: main-vpc
+        resource_type: network
+kind: ecs_fargate_service
+metadata:
+    name: backend
+spec:
+    container_image: nginx:latest
+    container_port: 3000
+    cpu: 256
+    desired_count: 1
+    env:
+        DATABASE_URL: ${module.postgres_tododb.default.interfaces.writer.connection_string}
+        DB_HOST: ${module.postgres_tododb.default.interfaces.writer.host}
+        DB_NAME: tododb
+        DB_PASSWORD: ${module.postgres_tododb.default.interfaces.writer.password}
+        DB_PORT: ${module.postgres_tododb.default.interfaces.writer.port}
+        DB_USER: ${module.postgres_tododb.default.interfaces.writer.username}
+        NODE_ENV: production
+    health_check_path: /api/health
+    memory: 512
+    path_pattern: /api/*
+    priority: 100
+version: "1.0"

@@ -1,0 +1,8 @@
+disabled: false
+flavor: aws_provider
+kind: cloud_account
+metadata:
+    name: main
+spec:
+    region: us-east-1
+version: "1.0"

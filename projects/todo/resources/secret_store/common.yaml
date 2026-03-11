@@ -1,0 +1,7 @@
+disabled: false
+flavor: default
+kind: secret_store
+metadata:
+    name: common
+spec: {}
+version: "1.0"

@@ -1,0 +1,16 @@
+disabled: false
+flavor: aws
+inputs:
+    cloud_account:
+        output_name: default
+        resource_name: main
+        resource_type: cloud_account
+    network_details:
+        output_name: default
+        resource_name: main-vpc
+        resource_type: network
+kind: alb
+metadata:
+    name: main-alb
+spec: {}
+version: "1.0"

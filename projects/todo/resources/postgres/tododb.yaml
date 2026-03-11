@@ -1,0 +1,26 @@
+disabled: false
+flavor: aws-rds
+inputs:
+    aws_provider:
+        output_name: default
+        resource_name: main
+        resource_type: cloud_account
+    vpc_details:
+        output_name: default
+        resource_name: main-vpc
+        resource_type: network
+kind: postgres
+metadata:
+    name: tododb
+spec:
+    security_config:
+        deletion_protection: false
+    sizing:
+        allocated_storage: 20
+        instance_class: db.t3.micro
+        read_replica_count: 0
+    version_config:
+        database_name: tododb
+        engine_version: "16.12"
+        master_username: postgres
+version: "1.0"

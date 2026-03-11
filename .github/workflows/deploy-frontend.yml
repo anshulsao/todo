@@ -1,0 +1,70 @@
+name: Deploy Frontend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install and build
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Get S3 bucket and CloudFront distribution
+        id: infra
+        run: |
+          # Read the terraform state to find bucket name and distribution ID
+          # These are output by the static_site module
+          BUCKET=$(aws s3api list-buckets --query "Buckets[?contains(Name,'todo') && contains(Name,'frontend')].Name" --output text | head -1)
+          DIST_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?contains(Comment,'todo') || contains(Origins.Items[0].DomainName,'todo')].Id" --output text | head -1)
+
+          echo "bucket=$BUCKET" >> "$GITHUB_OUTPUT"
+          echo "distribution_id=$DIST_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy to S3
+        working-directory: frontend
+        run: |
+          if [ -n "${{ steps.infra.outputs.bucket }}" ]; then
+            aws s3 sync dist/ "s3://${{ steps.infra.outputs.bucket }}" --delete
+            echo "Deployed to S3 bucket: ${{ steps.infra.outputs.bucket }}"
+          else
+            echo "S3 bucket not found. Run raptor2 apply first."
+            exit 1
+          fi
+
+      - name: Invalidate CloudFront cache
+        if: steps.infra.outputs.distribution_id != ''
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ steps.infra.outputs.distribution_id }}" \
+            --paths "/*"
+          echo "CloudFront cache invalidated"

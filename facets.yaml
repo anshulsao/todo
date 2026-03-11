@@ -1,0 +1,7 @@
+server_url: ""
+module_sources:
+  - name: facets-official
+    type: git
+    url: https://github.com/Facets-cloud/facets-v3-modules.git
+    ref: main
+    path: modules

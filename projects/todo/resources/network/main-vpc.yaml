@@ -1,0 +1,15 @@
+disabled: false
+flavor: aws_network
+inputs:
+    cloud_account:
+        output_name: default
+        resource_name: main
+        resource_type: cloud_account
+kind: network
+metadata:
+    name: main-vpc
+spec:
+    auto_select_azs: true
+    nat_gateway:
+        strategy: single
+version: "1.0"
