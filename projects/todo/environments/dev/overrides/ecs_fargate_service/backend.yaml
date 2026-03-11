@@ -1,2 +1,2 @@
 spec:
-    container_image: 313496281593.dkr.ecr.us-east-1.amazonaws.com/todo-backend:244e21b308ff0b382314b7f943f377532f46f33a
+    container_image: 313496281593.dkr.ecr.us-east-1.amazonaws.com/todo-backend:95d08276d96084bf01d4d5b4ac6b879188ea9414
