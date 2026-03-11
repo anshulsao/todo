@@ -29,7 +29,6 @@ spec:
     cpu: 256
     desired_count: 1
     env:
-        DATABASE_URL: ${module.postgres_tododb.default.interfaces.writer.connection_string}
         DB_HOST: ${module.postgres_tododb.default.interfaces.writer.host}
         DB_NAME: tododb
         DB_PASSWORD: ${module.postgres_tododb.default.interfaces.writer.password}
