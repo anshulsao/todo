@@ -8,9 +8,12 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+const dbHost = (process.env.DB_HOST || '').split(':')[0];
+const dbPort = parseInt(process.env.DB_PORT || (process.env.DB_HOST || '').split(':')[1] || '5432');
+
 const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: parseInt(process.env.DB_PORT || '5432'),
+  host: dbHost,
+  port: dbPort,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME || 'tododb',
