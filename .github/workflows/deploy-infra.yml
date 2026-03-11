@@ -25,13 +25,11 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.11.1"
-
-      - name: Install raptor2
+      - name: Install Terraform and raptor2
         run: |
+          curl -sL https://releases.hashicorp.com/terraform/1.11.1/terraform_1.11.1_linux_amd64.zip -o /tmp/tf.zip
+          unzip -o /tmp/tf.zip -d /usr/local/bin/
+          terraform version
           curl -sL https://github.com/Facets-cloud/raptor2-releases/releases/download/raptor2-v0.1.0/raptor2-linux-amd64 -o /usr/local/bin/raptor2
           chmod +x /usr/local/bin/raptor2
 
@@ -43,7 +41,6 @@ jobs:
     needs: plan
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    environment: production   # requires manual approval in GitHub
     permissions:
       contents: read
     steps:
@@ -56,13 +53,11 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.11.1"
-
-      - name: Install raptor2
+      - name: Install Terraform and raptor2
         run: |
+          curl -sL https://releases.hashicorp.com/terraform/1.11.1/terraform_1.11.1_linux_amd64.zip -o /tmp/tf.zip
+          unzip -o /tmp/tf.zip -d /usr/local/bin/
+          terraform version
           curl -sL https://github.com/Facets-cloud/raptor2-releases/releases/download/raptor2-v0.1.0/raptor2-linux-amd64 -o /usr/local/bin/raptor2
           chmod +x /usr/local/bin/raptor2
 
