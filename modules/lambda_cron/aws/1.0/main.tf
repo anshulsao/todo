@@ -8,6 +8,9 @@ locals {
   schedule_expression = try(local.spec.schedule_expression, "cron(0 8 * * ? *)")
   sender_email        = try(local.spec.sender_email, "")
   recipient_email     = try(local.spec.recipient_email, "")
+  s3_bucket           = try(local.spec.s3_bucket, "")
+  s3_key              = try(local.spec.s3_key, "")
+  use_s3              = local.s3_bucket != "" && local.s3_key != ""
   user_env            = try(local.spec.env, {})
 
   function_name = "${var.instance_name}-${var.environment.unique_name}"
@@ -102,7 +105,11 @@ resource "aws_lambda_function" "main" {
   runtime       = local.runtime
   memory_size   = local.memory_size
   timeout       = local.timeout
-  filename      = data.archive_file.placeholder.output_path
+
+  # Use S3 when CI has uploaded a zip, otherwise use placeholder for initial deploy
+  filename  = local.use_s3 ? null : data.archive_file.placeholder.output_path
+  s3_bucket = local.use_s3 ? local.s3_bucket : null
+  s3_key    = local.use_s3 ? local.s3_key : null
 
   vpc_config {
     subnet_ids         = local.private_subnet_ids
@@ -114,10 +121,6 @@ resource "aws_lambda_function" "main" {
   }
 
   tags = local.all_tags
-
-  lifecycle {
-    ignore_changes = [filename, source_code_hash]
-  }
 }
 
 # --- EventBridge Schedule ---

@@ -414,6 +414,7 @@ Plan includes changes OUTSIDE your targets. Apply anyway? [y/N]:
 - staging/prod: ALWAYS show plan, ALWAYS ask for confirmation
 - Show resource count summary, not raw terraform output
 - On failure: read `.tfgen/` files and terraform output to diagnose
+- After first successful deploy: run `/setup-ci` to automate future deploys via CI
 
 ## Diagnose
 
@@ -445,6 +446,23 @@ Plan includes changes OUTSIDE your targets. Apply anyway? [y/N]:
 
 For writing, scaffolding, or testing Facets modules, use the `/module-dev` skill.
 It covers the 5-file contract, `raptor2 create module` scaffold, output types, and validation.
+
+## CI/CD Pipelines
+
+**IMPORTANT:** After your first successful `apply environment`, set up CI immediately.
+Running `apply` from your laptop works for testing, but production infrastructure
+MUST deploy through a pipeline with plan review, approval gates, and audit trails.
+
+Say `/setup-ci` to generate workflow files. It reads your project and generates
+pipelines tailored to your resources, app sources, and cloud provider.
+
+Without CI:
+```
+  - State lives on your laptop (lost if disk fails)
+  - No review gate before production changes
+  - No audit trail of who deployed what
+  - Manual deploys diverge from committed code
+```
 
 ## Contributing Modules
 
@@ -511,4 +529,7 @@ CONTRIBUTING:
 AUTH (enterprise):
   raptor2 login                                   Authenticate
   raptor2 whoami                                  Show auth context
+
+CI/CD:
+  /setup-ci                                       Generate CI workflow files
 ```

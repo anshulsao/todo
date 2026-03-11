@@ -9,16 +9,25 @@ on:
 
 env:
   AWS_REGION: us-east-1
+  LAMBDA_S3_BUCKET: todo-tfstate-313496281593
+  LAMBDA_S3_PREFIX: lambda-artifacts/todo-summary
 
 jobs:
-  deploy:
+  build-and-update:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
-      contents: read
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -27,27 +36,34 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
       - name: Install dependencies and package
         working-directory: backend/lambdas/todo-summary
         run: |
           npm ci
           zip -r ../../../todo-summary-lambda.zip .
 
-      - name: Deploy to Lambda
+      - name: Upload zip to S3
+        id: upload
         run: |
-          FUNCTION_NAME="todo-summary-todo-dev"
+          S3_KEY="${LAMBDA_S3_PREFIX}/${{ github.sha }}.zip"
+          aws s3 cp todo-summary-lambda.zip "s3://${LAMBDA_S3_BUCKET}/${S3_KEY}"
+          echo "s3_key=$S3_KEY" >> "$GITHUB_OUTPUT"
+          echo "Uploaded to s3://${LAMBDA_S3_BUCKET}/${S3_KEY}"
 
-          if aws lambda get-function --function-name "$FUNCTION_NAME" 2>/dev/null; then
-            aws lambda update-function-code \
-              --function-name "$FUNCTION_NAME" \
-              --zip-file fileb://todo-summary-lambda.zip \
-              --no-cli-pager
-            echo "Lambda function code updated"
-          else
-            echo "Lambda function not found. Infrastructure may need initial deploy."
-          fi
+      - name: Update override and commit
+        run: |
+          DOWNLOAD_URL=$(curl -fsSL \
+            https://api.github.com/repos/Facets-cloud/raptor2-releases/releases/latest \
+            | jq -r '.assets[] | select(.name == "raptor2-linux-amd64") | .browser_download_url')
+          curl -fsSL "$DOWNLOAD_URL" -o /usr/local/bin/raptor2
+          chmod +x /usr/local/bin/raptor2
+
+          raptor2 apply override lambda_cron/todo-summary -p todo -e dev \
+            --set "spec.s3_bucket=${LAMBDA_S3_BUCKET}" \
+            --set "spec.s3_key=${{ steps.upload.outputs.s3_key }}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add projects/
+          git commit -m "[skip ci] deploy: update todo-summary lambda to ${{ github.sha }}" || echo "No changes to commit"
+          git push

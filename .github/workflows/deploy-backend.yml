@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'backend/**'
+      - '!backend/lambdas/**'
   workflow_dispatch:
 
 env:
@@ -46,8 +47,10 @@ jobs:
 
       - name: Update image override and commit
         run: |
-          curl -sL https://github.com/Facets-cloud/raptor2-releases/releases/download/raptor2-v0.1.0/raptor2-linux-amd64 \
-            -o /usr/local/bin/raptor2
+          DOWNLOAD_URL=$(curl -fsSL \
+            https://api.github.com/repos/Facets-cloud/raptor2-releases/releases/latest \
+            | jq -r '.assets[] | select(.name == "raptor2-linux-amd64") | .browser_download_url')
+          curl -fsSL "$DOWNLOAD_URL" -o /usr/local/bin/raptor2
           chmod +x /usr/local/bin/raptor2
 
           raptor2 apply override ecs_fargate_service/backend -p todo -e dev \

@@ -53,6 +53,12 @@ spec:
       type: string
       description: "Email address to receive the summary"
       x-ui-overrides-only: true
+    s3_bucket:
+      type: string
+      description: "S3 bucket containing the Lambda deployment zip"
+    s3_key:
+      type: string
+      description: "S3 key for the Lambda deployment zip"
     env:
       type: object
       description: "Additional environment variables"
